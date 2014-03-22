@@ -34,7 +34,7 @@ func main() {
 	})
 
 	m.Post("/login", binding.Form(User{}), func(user User, r render.Render) {
-		//db.Set("usertest",`{"name":"测试用户","password":"password"}`)
+		//db.Set("usertest",`{"name":"测试用户","password":"password"}`) 第一次启动的时候最好启用这行代码，或者您可以自己想SSDB中插入一行数据。
 		val, err1 := db.Get(user.Name)
 		if err1 != nil {
 			fmt.Printf("%s\n", "用户不存在！");
