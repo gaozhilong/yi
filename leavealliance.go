@@ -2,57 +2,66 @@ package main
 
 import (
 	"github.com/codegangsta/martini"
-	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/binding"
-	"ssdb"
+	"github.com/martini-contrib/render"
+	"model"
 	"utils"
 	"fmt"
-	"os"
 	"time"
+	"ssdb"
 )
 
-type User struct {
-	Name		string `form:"name"`
-	Password	string `form:"password"`
-}
+
 
 func main() {
 	m := martini.Classic()
+	m.Use(utils.Static("static"))
 	m.Use(render.Renderer())
+	//m.Use(utils.DB())
 
 	ip := "127.0.0.1"
 	port := 8888
 	db, err := ssdb.Connect(ip, port)
 	if err != nil {
-		os.Exit(1)
+		panic(err)
 	}
 
-	defer db.Close()
-
 	m.Get("/", func(r render.Render) {
-		r.HTML(200, "login", nil)
+		r.HTML(200, "login", "")
 	})
 
-	m.Post("/login", binding.Form(User{}), func(user User, r render.Render) {
-		//db.Set("usertest",`{"name":"测试用户","password":"password"}`) 第一次启动的时候最好启用这行代码，或者您可以自己想SSDB中插入一行数据。
+	m.Get("/register", func(r render.Render) {
+		r.HTML(200, "signin", "")
+	})
+
+	m.Post("/login", binding.Form(model.User{}), func (user model.User, r render.Render) {
 		val, err1 := db.Get(user.Name)
 		if err1 != nil {
 			fmt.Printf("%s\n", "用户不存在！");
 		}
+		fmt.Printf("%s\n", val);
 		usrstr := val.(string)
 		m := utils.JSONstringToMap(usrstr)
 
-		password := m["password"]
+		password := m["Password"]
 		//os.Exit(1);
 		if (user.Password == password) {
 			id := time.Now()
-			m["certificate"] = id.Format("20060102150405")
+			m["Certificate"] = id.Format("20060102150405")
 			db.Set("user1", utils.MapToJSONstring((map[string]interface{})(m)));
 			r.HTML(200, "index", nil)
 		} else {
 			r.HTML(200, "login", nil)
 		}
 	})
+
+	m.Post("/register", binding.Form(model.User{}), func (user model.User, r render.Render) {
+			//db.Set(user.Name,user)
+			urlValues := utils.StructToMap(&user)
+			db.Set(urlValues["Name"].(string), utils.MapToJSONstring((map[string]interface{})(urlValues)));
+			fmt.Println(urlValues)
+			r.HTML(200, "login", nil)
+		})
 
 	m.Run()
 }
