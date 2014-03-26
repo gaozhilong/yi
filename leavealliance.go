@@ -39,7 +39,6 @@ func main() {
 		if err1 != nil {
 			fmt.Printf("%s\n", "用户不存在！");
 		}
-		fmt.Printf("%s\n", val);
 		usrstr := val.(string)
 		m := utils.JSONstringToMap(usrstr)
 
@@ -56,12 +55,21 @@ func main() {
 	})
 
 	m.Post("/register", binding.Form(model.User{}), func (user model.User, r render.Render) {
-			//db.Set(user.Name,user)
-			urlValues := utils.StructToMap(&user)
-			db.Set(urlValues["Name"].(string), utils.MapToJSONstring((map[string]interface{})(urlValues)));
-			fmt.Println(urlValues)
-			r.HTML(200, "login", nil)
-		})
+		//db.Set(user.Name,user)
+		urlValues := utils.StructToMap(&user)
+		db.Set(urlValues["Name"].(string), utils.MapToJSONstring((map[string]interface{})(urlValues)));
+		r.Redirect("/user/"+urlValues["Name"].(string))
+	})
+
+	m.Get("/user/:name", func(r render.Render, params martini.Params) {
+		val, err1 := db.Get(params["name"])
+		if err1 != nil {
+			fmt.Printf("%s\n", "用户不存在！");
+		}
+		usrstr := val.(string)
+		mp := utils.JSONstringToMap(usrstr)
+		r.HTML(200, "showuser", mp)
+	})
 
 	m.Run()
 }
