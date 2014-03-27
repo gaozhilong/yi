@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"time"
 	"ssdb"
+	"net/http"
+	"os"
+	"io"
 )
 
 
@@ -69,6 +72,35 @@ func main() {
 		usrstr := val.(string)
 		mp := utils.JSONstringToMap(usrstr)
 		r.HTML(200, "showuser", mp)
+	})
+
+	m.Get("/upload", binding.Form(model.User{}), func (r render.Render) {
+			r.HTML(200, "uploadfile", "")
+	})
+
+	m.Post("/upload", binding.Form(model.User{}), func (w http.ResponseWriter, req *http.Request, r render.Render) {
+		//db.Set(user.Name,user)
+			file, header, err := req.FormFile("file")
+			if err != nil {
+				fmt.Fprintln(w, err)
+				return
+			}
+			defer file.Close()
+
+			out, err := os.Create("D:/GO/temp/"+header.Filename)
+			if err != nil {
+				fmt.Fprintf(w, "Failed to open the file for writing")
+				return
+			}
+			defer out.Close()
+			_, err = io.Copy(out, file)
+			if err != nil {
+				fmt.Fprintln(w, err)
+			}
+
+			// the header contains useful info, like the original file name
+			fmt.Fprintf(w, "File %s uploaded successfully.", header.Filename)
+			//r.Redirect("/user")
 	})
 
 	m.Run()
